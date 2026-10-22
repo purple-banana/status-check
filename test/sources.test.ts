@@ -85,10 +85,12 @@ test("feed keeps recent unresolved entries and skips announcements", async () =>
     <item><title>Login errors</title><pubDate>${now}</pubDate><description>This incident has been resolved.</description></item>
     <item><title>Scheduled maintenance for payments</title><pubDate>${now}</pubDate></item>
     <item><title>Old outage</title><pubDate>Mon, 01 Jan 2024 00:00:00 GMT</pubDate></item>
+    <item><title>PHP security notice</title><pubDate>${now}</pubDate></item>
   </channel></rss>`;
   const snapshot = await feed({ url: "https://example.com/rss" }, fakeHttp(xml));
 
-  assert.deepEqual(snapshot.incidents.map((i) => i.title), ["Partial outage in EU"]);
+  assert.deepEqual(snapshot.incidents.map((i) => i.title), ["Partial outage in EU", "PHP security notice"]);
+  assert.deepEqual(snapshot.incidents[1]!.updates, [], "no empty update for a title-only entry");
   assert.equal(snapshot.status, "partial_outage");
 });
 

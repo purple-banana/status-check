@@ -48,7 +48,8 @@ export const feed: StatusSource = async (config, http) => {
         impact: statusFromWords(`${e.title} ${e.body.slice(0, 300)}`, "operational"),
         url: e.link || undefined,
         startedAt: e.at,
-        updates: [{ at: e.at, status: "update", body: e.body }],
+        // Title-only entries (Hetzner notices) have no update to show.
+        updates: e.body ? [{ at: e.at, status: "update", body: e.body }] : [],
       }),
     );
 
