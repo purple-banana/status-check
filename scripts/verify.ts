@@ -13,14 +13,18 @@ const only = new Set(process.argv.slice(2));
 const providers = only.size ? catalog.filter((p) => only.has(p.id)) : catalog;
 const http = createHttp({ timeoutMs: 15_000, userAgent: "status-check-verify" });
 
+// Same parallelism as the worker: firing all requests at once makes probes look slow.
+const queue = [...providers];
 const failures: string[] = [];
 await Promise.all(
-  providers.map(async (p) => {
-    try {
-      const s = await sources[p.source](p.config, http);
-      if (s.status !== "operational") console.log(`${p.id}: ${s.status} (${s.incidents.length} incidents)`);
-    } catch (error) {
-      failures.push(`${p.id} [${p.source}]: ${error instanceof Error ? error.message : error}`);
+  Array.from({ length: 16 }, async () => {
+    for (let p = queue.shift(); p; p = queue.shift()) {
+      try {
+        const s = await sources[p.source](p.config, http);
+        if (s.status !== "operational") console.log(`${p.id}: ${s.status} (${s.incidents.length} incidents)`);
+      } catch (error) {
+        failures.push(`${p.id} [${p.source}]: ${error instanceof Error ? error.message : error}`);
+      }
     }
   }),
 );

@@ -65,7 +65,12 @@ export function createWriter(sql: Sql): StatusWriter {
         }
         for (const r of changed) await saveSnapshot(tx, r.providerId, r.snapshot, r.fingerprint);
         if (failed.length) {
-          const rows = failed.map((r) => ({ provider_id: r.providerId, status: "unknown", error: r.error.slice(0, 500) }));
+          const rows = failed.map((r) => ({
+            provider_id: r.providerId,
+            status: "unknown",
+            error: r.error.slice(0, 500),
+            error_at: new Date(),
+          }));
           await tx`
             insert into provider_status ${tx(rows)}
             on conflict (provider_id) do update set error = excluded.error, error_at = now()`;

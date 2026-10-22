@@ -1,6 +1,6 @@
 import type { StatusSource } from "../domain/ports.ts";
 import { worst, type Status } from "../domain/status.ts";
-import { incident, iso, join, requireString } from "./util.ts";
+import { incident, iso, join, plain, requireString } from "./util.ts";
 
 /** Instatus `summary.json`, plus `v2/components.json` only when something is wrong. */
 interface Summary {
@@ -12,11 +12,14 @@ interface Summary {
 interface InEvent {
   id: string;
   name: string;
+  /** Incidents use `started`, maintenances `start`. */
   started?: string;
+  start?: string;
   status: string;
   impact?: string;
   url?: string;
   updatedAt?: string;
+  lastUpdate?: { message: string; createdAt: string };
 }
 
 const LEVEL: Record<string, Status> = {
@@ -50,13 +53,20 @@ export const instatus: StatusSource = async (config, http) => {
       status: e.status.toLowerCase(),
       impact: maintenance ? "maintenance" : level(e.impact),
       url: e.url,
-      startedAt: iso(e.started),
+      startedAt: iso(e.started ?? e.start ?? e.updatedAt),
       updatedAt: e.updatedAt ? iso(e.updatedAt) : undefined,
+      updates: e.lastUpdate
+        ? [{ at: iso(e.lastUpdate.createdAt), status: e.status.toLowerCase(), body: plain(e.lastUpdate.message) }]
+        : [],
     });
+
+  // "Active" maintenances include announced windows that have not started yet.
+  const now = Date.now();
+  const started = (e: InEvent) => e.status !== "NOTSTARTEDYET" && (!e.start || Date.parse(e.start) <= now);
 
   const incidents = [
     ...(summary.activeIncidents ?? []).map((e) => toIncident(e, false)),
-    ...(summary.activeMaintenances ?? []).map((e) => toIncident(e, true)),
+    ...(summary.activeMaintenances ?? []).filter(started).map((e) => toIncident(e, true)),
   ];
 
   return {

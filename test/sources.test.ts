@@ -4,6 +4,7 @@ import type { Http } from "../src/domain/ports.ts";
 import { statusSince } from "../src/domain/snapshot.ts";
 import { capAt, worst } from "../src/domain/status.ts";
 import { feed } from "../src/sources/feed.ts";
+import { instatus } from "../src/sources/instatus.ts";
 import { railway } from "../src/sources/railway.ts";
 import { statuspage } from "../src/sources/statuspage.ts";
 
@@ -89,4 +90,22 @@ test("feed keeps recent unresolved entries and skips announcements", async () =>
 
   assert.deepEqual(snapshot.incidents.map((i) => i.title), ["Partial outage in EU"]);
   assert.equal(snapshot.status, "partial_outage");
+});
+
+test("instatus ignores maintenance windows that have not started", async () => {
+  const update = { message: "Bancontact maintenance", createdAt: "2026-10-19T13:22:13Z" };
+  const fixture = {
+    page: { status: "UP" },
+    activeMaintenances: [
+      { id: "later", name: "Upcoming", start: "2999-01-01T00:00:00Z", status: "NOTSTARTEDYET", updatedAt: "2026-10-21T22:00:00Z", lastUpdate: update },
+      { id: "now", name: "Running", start: "2026-10-22T10:00:00Z", status: "INPROGRESS", updatedAt: "2026-10-22T10:00:00Z", lastUpdate: update },
+    ],
+  };
+  const first = await instatus({ url: "https://status.example.com" }, fakeHttp(fixture));
+  const second = await instatus({ url: "https://status.example.com" }, fakeHttp(fixture));
+
+  assert.deepEqual(first.incidents.map((i) => i.id), ["now"]);
+  assert.equal(first.incidents[0]!.startedAt, "2026-10-22T10:00:00.000Z");
+  assert.equal(first.incidents[0]!.updates[0]!.body, "Bancontact maintenance");
+  assert.deepEqual(first, second, "same feed, same snapshot: no write every poll");
 });
