@@ -1,0 +1,30 @@
+{
+  "name": "status-check",
+  "version": "0.1.0",
+  "description": "Live status of 200+ cloud and SaaS providers for AI agents: a polling worker that writes to Postgres and an MCP server that reads it.",
+  "license": "MIT",
+  "type": "module",
+  "private": true,
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "worker": "node src/worker/main.ts",
+    "mcp": "node src/mcp/main.ts",
+    "discover": "node scripts/discover.ts",
+    "verify": "node scripts/verify.ts",
+    "typecheck": "tsc",
+    "test": "node --test \"test/**/*.test.ts\"",
+    "check": "tsc && npm test"
+  },
+  "dependencies": {
+    "fast-xml-parser": "^5.11.2",
+    "mcp-use": "^2.11.2",
+    "postgres": "^3.4.9",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@types/node": "^24.19.2",
+    "typescript": "^7.0.2"
+  }
+}

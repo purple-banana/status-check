@@ -1,0 +1,48 @@
+# Bring your own Postgres: set DATABASE_URL in .env.
+# No Postgres yet? `docker compose --profile db up -d` also starts one.
+
+x-app: &app
+  build: .
+  image: status-check
+  restart: unless-stopped
+  env_file: .env
+  depends_on:
+    db:
+      condition: service_healthy
+      required: false
+
+services:
+  worker:
+    <<: *app
+    command: ["node", "src/worker/main.ts"]
+
+  mcp:
+    <<: *app
+    command: ["node", "src/mcp/main.ts"]
+    ports:
+      - "${PORT:-3000}:3000"
+    environment:
+      PORT: "3000"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  db:
+    image: postgres:17-alpine
+    profiles: ["db"]
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: status
+      POSTGRES_PASSWORD: status
+      POSTGRES_DB: status
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U status"]
+      interval: 5s
+      retries: 10
+
+volumes:
+  pgdata:
