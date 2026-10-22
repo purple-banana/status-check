@@ -65,6 +65,12 @@ No Postgres yet? `docker compose --profile db up -d --build` starts one alongsid
 
 The worker creates its tables on start (`src/store/schema.sql`, idempotent) and syncs the provider catalog. The MCP server listens on port 3000 at `/mcp`, and `/health` returns 503 when the data is more than 5 minutes old.
 
+To redeploy automatically when `main` moves, run `deploy/update.sh` from cron. It does nothing unless there are new commits, then fast-forwards, rebuilds and prunes old images:
+
+```bash
+echo '* * * * * root /opt/status-check/deploy/update.sh >> /var/log/status-check-deploy.log 2>&1' | sudo tee /etc/cron.d/status-check
+```
+
 Without Docker you need Node 24 or newer, which runs the TypeScript sources directly:
 
 ```bash
