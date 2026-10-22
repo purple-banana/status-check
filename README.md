@@ -2,6 +2,8 @@
 
 **Live status of 246 cloud, SaaS and AI providers for your agents, over MCP.**
 
+Use the hosted endpoint, no key or signup: **`https://isup.fyi/mcp`** ([setup for each agent](https://isup.fyi)). Or self-host it with the steps below.
+
 On Oct 21, 2026 Railway paused builds platform-wide for over a day. Agents kept retrying deploys, reading logs and "fixing" code that wasn't broken. A human would have opened the status page. status-check gives agents that status page: one MCP call tells them that Railway is in a major outage, since when, which components are affected, and what the vendor's latest update says.
 
 ```
@@ -84,14 +86,16 @@ DATABASE_URL=postgres://localhost/status npm run mcp
 Claude Code:
 
 ```bash
-claude mcp add --transport http status-check https://status.example.com/mcp
+claude mcp add --transport http isup https://isup.fyi/mcp
 ```
 
 Cursor, Windsurf and other clients take a URL entry such as:
 
 ```json
-{ "mcpServers": { "status-check": { "url": "https://status.example.com/mcp" } } }
+{ "mcpServers": { "isup": { "url": "https://isup.fyi/mcp" } } }
 ```
+
+For a self-hosted server, use your own URL instead. [isup.fyi](https://isup.fyi) has the setup for each client.
 
 ### Configuration
 

@@ -177,5 +177,37 @@ export function createServer(reader: StatusReader, { host, port, allowedHosts, c
     return c.json({ ok: fresh, providers, lastCheckedAt }, fresh ? 200 : 503);
   });
 
+  // Plain JSON for web pages (the isup.fyi live panel): every provider with a problem and
+  // the latest update of its active incidents. Short cache so a busy page is one query a minute.
+  server.get("/api/incidents", async (c) => {
+    const [all, { lastCheckedAt }] = await Promise.all([reader.search(), reader.health()]);
+    const affected = all.filter((p) => severity(p.status) >= severity("degraded"));
+    const active = affected.length ? byProvider(await reader.incidents({ providerIds: affected.map((p) => p.id), active: true })) : new Map();
+    const clip = (body: string) => (body.length > 400 ? `${body.slice(0, 399)}…` : body);
+
+    c.header("cache-control", "public, max-age=30, s-maxage=30");
+    return c.json({
+      checkedAt: lastCheckedAt,
+      providers: all.length,
+      affected: affected.map((p) => ({
+        id: p.id,
+        name: p.name,
+        category: p.category,
+        status: p.status,
+        summary: p.summary,
+        since: p.changedAt,
+        url: p.url,
+        incidents: (active.get(p.id) ?? []).slice(0, 3).map((i: StoredIncident) => ({
+          title: i.title,
+          impact: i.impact,
+          status: i.status,
+          url: i.url ?? null,
+          startedAt: i.startedAt,
+          update: i.updates[0] ? { ...i.updates[0], body: clip(i.updates[0].body) } : null,
+        })),
+      })),
+    });
+  });
+
   return server;
 }

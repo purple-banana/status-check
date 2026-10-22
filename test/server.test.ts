@@ -46,3 +46,11 @@ test("categories match case-insensitively", async () => {
   assert.match(result.content[0]!.text, /1 of 1 providers have problems/);
   assert.match((await call("search_providers", { category: "Email" })).content[0]!.text, /^resend/);
 });
+
+test("/api/incidents lists providers with problems as JSON", async () => {
+  const res = await server.fetch(new Request("http://localhost/api/incidents"));
+  const body = (await res.json()) as { providers: number; affected: { id: string; status: string }[] };
+  assert.equal(res.status, 200);
+  assert.equal(body.providers, 2);
+  assert.deepEqual(body.affected.map((p) => [p.id, p.status]), [["railway", "major_outage"]]);
+});
