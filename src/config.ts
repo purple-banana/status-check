@@ -19,4 +19,6 @@ export const config = {
   host: env.HOST ?? "0.0.0.0",
   port: Number(env.PORT ?? 3000),
   allowedHosts: list(env.ALLOWED_HOSTS),
+  /** How long the MCP server answers current-state questions from memory before reloading. */
+  cacheMs: Number(env.CACHE_TTL_MS ?? 15_000),
 };

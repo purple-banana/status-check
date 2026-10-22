@@ -1,5 +1,6 @@
 import { catalog } from "../catalog/providers.ts";
 import { config } from "../config.ts";
+import { cachedReader } from "../store/cached.ts";
 import { connect, createReader } from "../store/postgres.ts";
 import { createServer } from "./server.ts";
 
@@ -7,7 +8,7 @@ import { createServer } from "./server.ts";
 process.env.MCP_USE_ANONYMIZED_TELEMETRY ??= "false";
 
 const sql = connect(config.databaseUrl(), 10);
-const server = createServer(createReader(sql), {
+const server = createServer(cachedReader(createReader(sql), config.cacheMs), {
   host: config.host,
   port: config.port,
   allowedHosts: config.allowedHosts,

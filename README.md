@@ -39,6 +39,7 @@ Agents always get the same shape no matter how the vendor publishes, and one wor
 - **Conditional requests**: the worker sends `If-None-Match` / `If-Modified-Since` and reuses the parsed body on `304`.
 - **Write only on change**: every snapshot gets a fingerprint. An unchanged feed costs one batched `UPDATE … checked_at` for the whole tick, not one write per provider.
 - **Bounded concurrency** (16 by default) with a 10 s timeout per request. A full tick over 246 providers takes about 6 s.
+- **In-memory snapshot**: the MCP server keeps every status and active incident in memory, reloaded at most every 15 s and shared by concurrent calls, so a burst of agent traffic costs one round of queries per window.
 - **Compact output**: tools return plain text with one fact per line, cap incidents per provider, and truncate long updates, so a whole stack fits in a few hundred tokens.
 
 ## Tools
@@ -108,6 +109,7 @@ For a self-hosted server, use your own URL instead. [isup.fyi](https://isup.fyi)
 | `USER_AGENT` | `status-check/0.1` | Sent to status pages. Add a contact URL if you run a public instance. |
 | `PORT` / `HOST` | `3000` / `0.0.0.0` | MCP listener |
 | `ALLOWED_HOSTS` | | Hostnames the MCP server answers to (DNS-rebinding protection) |
+| `CACHE_TTL_MS` | `15000` | The MCP server answers current-state questions from an in-memory snapshot reloaded at most this often |
 | `MCP_USE_ANONYMIZED_TELEMETRY` | `false` | mcp-use's own anonymous telemetry, off unless you set `true` |
 
 The MCP server only reads. In production give it a read-only role:

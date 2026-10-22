@@ -186,7 +186,7 @@ export function createReader(sql: Sql): StatusReader {
           ${active ? sql`and resolved_at is null` : sql``}
           ${sinceDays ? sql`and (resolved_at is null or resolved_at > now() - make_interval(days => ${sinceDays}))` : sql``}
         order by started_at desc
-        limit 200`;
+        ${active ? sql`` : sql`limit 200`}`; // active incidents are few; history is capped
       return rows.map((r) => ({
         ...r,
         url: r.url ?? undefined,
