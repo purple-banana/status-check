@@ -56,7 +56,7 @@ The server's instructions tell agents to call `check_stack` when a deploy, build
 You need Docker and a Postgres database (any version from 13 up).
 
 ```bash
-git clone <this repo> && cd status-check
+git clone https://github.com/purple-banana/status-check.git && cd status-check
 cp .env.example .env        # set DATABASE_URL
 docker compose up -d --build
 ```
