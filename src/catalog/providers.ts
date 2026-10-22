@@ -115,7 +115,6 @@ const STATUSPAGE: [...Row, api?: string][] = [
   ["mailgun", "Mailgun", "email", "https://status.mailgun.com"],
   ["mailjet", "Mailjet", "email", "https://status.mailjet.com"],
   ["resend", "Resend", "email", "https://status.resend.com", "https://statuspage.incident.io/resend"],
-  ["sendgrid", "SendGrid", "email", "https://status.sendgrid.com"],
   ["sparkpost", "SparkPost", "email", "https://status.sparkpost.com"],
   ["fly", "Fly.io", "hosting", "https://status.flyio.net"],
   ["ghost", "Ghost(Pro)", "hosting", "https://status.ghost.org", "https://statuspage.incident.io/ghostpro"],
@@ -257,6 +256,8 @@ const CUSTOM: [...Row, source: SourceKind, config: Record<string, unknown>][] = 
   ["instantly", "Instantly", "email", "https://instantly.ai", "probe", {"url": "https://api.instantly.ai/api/v2/accounts"}],
   ["mailchimp", "Mailchimp", "email", "https://status.mailchimp.com", "probe", {"url": "https://us1.api.mailchimp.com/3.0/ping"}],
   ["postmark", "Postmark", "email", "https://status.postmarkapp.com", "probe", {"url": "https://api.postmarkapp.com/server"}],
+  // status.sendgrid.com redirects to Twilio's page; count only the SendGrid groups on it.
+  ["sendgrid", "SendGrid", "email", "https://status.sendgrid.com", "statuspage", {"url": "https://status.twilio.com", "groups": ["SendGrid Mail Sending", "SendGrid Webhooks"]}],
   ["heroku", "Heroku", "hosting", "https://status.heroku.com", "heroku", {}],
   ["railway", "Railway", "hosting", "https://status.railway.com", "railway", {}],
   ["replit", "Replit", "hosting", "https://status.replit.com", "probe", {"url": "https://replit.com/"}],

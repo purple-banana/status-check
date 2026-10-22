@@ -38,6 +38,13 @@ export function createServer(reader: StatusReader, { host, port, allowedHosts, c
     allowedHosts: allowedHosts.length ? allowedHosts : undefined,
   });
 
+  // Matched case-insensitively. An unknown category is an error, never an empty all-clear.
+  const known = new Set(categories);
+  const unknownCategory = (category?: string) =>
+    category !== undefined && !known.has(category.toLowerCase())
+      ? text(`Unknown category "${category}". Categories: ${categories.join(", ")}.`, true)
+      : null;
+
   const resolveOne = async (name: string) => (await reader.resolve([name])).get(name) ?? null;
   const notFound = (name: string) => text(`No tracked provider matches "${name}". Use search_providers to find its id.`, true);
 
@@ -86,7 +93,9 @@ export function createServer(reader: StatusReader, { host, port, allowedHosts, c
       annotations: READ_ONLY,
     },
     async ({ category, minimum }) => {
-      const all = await reader.search(undefined, category);
+      const invalid = unknownCategory(category);
+      if (invalid) return invalid;
+      const all = await reader.search(undefined, category?.toLowerCase());
       const affected = all.filter((p) => severity(p.status) >= severity(minimum as Status));
       if (!affected.length) return text(`No problems at or above ${minimum} across ${all.length} tracked providers.`);
 
@@ -154,7 +163,9 @@ export function createServer(reader: StatusReader, { host, port, allowedHosts, c
           [`${all.length} providers. Categories:`, ...[...counts].sort().map(([c, ps]) => `  ${c} (${ps.length})`)].join("\n"),
         );
       }
-      const found = await reader.search(query, category);
+      const invalid = unknownCategory(category);
+      if (invalid) return invalid;
+      const found = await reader.search(query, category?.toLowerCase());
       if (!found.length) return text(`No provider matches${query ? ` "${query}"` : ""}${category ? ` in ${category}` : ""}.`);
       return text(found.map((p) => `${p.id} — ${p.name} [${p.category}]: ${p.status}`).join("\n"));
     },

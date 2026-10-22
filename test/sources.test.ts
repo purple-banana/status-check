@@ -111,3 +111,25 @@ test("instatus ignores maintenance windows that have not started", async () => {
   assert.equal(first.incidents[0]!.updates[0]!.body, "Bancontact maintenance");
   assert.deepEqual(first, second, "same feed, same snapshot: no write every poll");
 });
+
+test("statuspage groups narrow a shared page to one product", async () => {
+  const page = {
+    status: { indicator: "major", description: "Partial System Outage" },
+    components: [
+      { id: "g1", name: "CARRIER NETWORK", status: "partial_outage", group: true },
+      { id: "c1", name: "SMS, APAC", status: "partial_outage", group_id: "g1" },
+      { id: "g2", name: "SendGrid Mail Sending", status: "operational", group: true },
+      { id: "c2", name: "SMTP", status: "operational", group_id: "g2" },
+    ],
+    incidents: [
+      { id: "sms", name: "SMS delays", status: "investigating", impact: "major", created_at: "2026-10-22T10:00:00Z", components: [{ name: "SMS, APAC", group_id: "g1" }] },
+    ],
+  };
+  const sendgrid = await statuspage({ url: "https://status.twilio.com", groups: ["SendGrid Mail Sending"] }, fakeHttp(page));
+  const twilio = await statuspage({ url: "https://status.twilio.com" }, fakeHttp(page));
+
+  assert.equal(sendgrid.status, "operational");
+  assert.deepEqual([sendgrid.components, sendgrid.incidents], [[], []]);
+  assert.equal(twilio.status, "partial_outage", "without groups the whole page counts");
+  assert.equal(twilio.incidents.length, 1);
+});

@@ -162,6 +162,8 @@ npm run discover -- https://status.example.com
 
 It detects the feed format and prints the `source` and `config` for a line in [`src/catalog/providers.ts`](src/catalog/providers.ts). Before opening a PR, run `npm run check` (typecheck and tests) and `npm run verify -- <id>` (polls the feed live). For a vendor with no feed, add a `probe` entry pointing at an API endpoint that answers without credentials, even with a 401.
 
+If several products share one Statuspage (SendGrid's redirects to Twilio's), give the `statuspage` config a `groups` list so only those component groups count for the provider.
+
 New source formats are one file in `src/sources/` that implements `StatusSource`: take the config, return a `Snapshot`.
 
 ## Project layout

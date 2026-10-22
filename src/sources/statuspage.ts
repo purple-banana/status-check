@@ -23,7 +23,7 @@ interface SpIncident {
   created_at: string;
   started_at?: string;
   updated_at?: string;
-  components?: { name: string }[];
+  components?: { name: string; group_id?: string | null }[];
   incident_updates?: { status: string; body: string; created_at: string; display_at?: string }[];
 }
 
@@ -51,18 +51,30 @@ export const statuspage: StatusSource = async (config, http) => {
   const all = summary.components ?? [];
   const groups = new Map(all.filter((c) => c.group).map((c) => [c.id, c.name]));
 
+  // Pages shared by several products (SendGrid lives on Twilio's) are narrowed to the
+  // provider's own component groups; the page-wide indicator then no longer applies.
+  const only = Array.isArray(config.groups) ? new Set(config.groups as string[]) : null;
+  const inScope = (c: { group_id?: string | null }) => !only || only.has(groups.get(c.group_id ?? "") ?? "");
+
   const components: Component[] = all
-    .filter((c) => !c.group && c.status !== "operational")
+    .filter((c) => !c.group && c.status !== "operational" && inScope(c))
     .map((c) => ({
       name: c.group_id && groups.has(c.group_id) ? `${groups.get(c.group_id)} / ${c.name}` : c.name,
       status: COMPONENT[c.status] ?? "degraded",
     }));
 
-  const maintenances = (summary.scheduled_maintenances ?? []).filter((m) => ACTIVE_MAINTENANCE.has(m.status));
+  const ours = (i: SpIncident) => !only || (i.components ?? []).some(inScope);
+  const maintenances = (summary.scheduled_maintenances ?? []).filter((m) => ACTIVE_MAINTENANCE.has(m.status) && ours(m));
   const incidents = [
-    ...(summary.incidents ?? []).map((i) => toIncident(i, INDICATOR[i.impact] ?? "degraded")),
+    ...(summary.incidents ?? []).filter(ours).map((i) => toIncident(i, INDICATOR[i.impact] ?? "degraded")),
     ...maintenances.map((m) => toIncident(m, "maintenance")),
   ];
+
+  if (only) {
+    const status = worst([...components.map((c) => c.status), ...incidents.map((i) => i.impact)]);
+    const summaryText = status === "operational" ? "All Systems Operational" : `${components.length} component(s) affected`;
+    return { status, summary: summaryText, components, incidents };
+  }
 
   return {
     status: worst([INDICATOR[summary.status.indicator] ?? "unknown", ...(maintenances.length ? ["maintenance" as const] : [])]),
