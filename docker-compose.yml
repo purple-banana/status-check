@@ -1,15 +1,13 @@
 # Bring your own Postgres: set DATABASE_URL in .env.
 # No Postgres yet? `docker compose --profile db up -d` also starts one.
 
+# No depends_on: the worker exits until Postgres accepts connections and restarts itself,
+# which also works when Postgres lives elsewhere and on older Compose versions.
 x-app: &app
   build: .
   image: status-check
   restart: unless-stopped
   env_file: .env
-  depends_on:
-    db:
-      condition: service_healthy
-      required: false
 
 services:
   worker:
@@ -19,8 +17,9 @@ services:
   mcp:
     <<: *app
     command: ["node", "src/mcp/main.ts"]
+    # Localhost only: put a TLS reverse proxy in front, or set BIND=0.0.0.0 to expose it directly.
     ports:
-      - "${PORT:-3000}:3000"
+      - "${BIND:-127.0.0.1}:${PORT:-3000}:3000"
     environment:
       PORT: "3000"
     healthcheck:
